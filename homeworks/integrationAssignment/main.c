@@ -22,6 +22,8 @@ double calculateIntegration(struct term*, int, int, int, int, char);
 
 /*------------------------------------------------------------------*/
 
+// this function takes command-line arguments and prints the 
+// numerical integration calculation to the stdio stream.
 int main(int pc, char** parameters)
 {
     char* polynomial = parameters[1];
@@ -57,6 +59,8 @@ int main(int pc, char** parameters)
 
 /*------------------------------------------------------------------*/
 
+// this function takes polynomial string and returns count of terms
+// in it.
 int calculateTermCount(char* polynomial)
 {
     int termCount = 1;
@@ -80,6 +84,8 @@ int calculateTermCount(char* polynomial)
 
 /*------------------------------------------------------------------*/
 
+// this function controls if given char parameter is an ascii digit
+// or not. if it is an ascii digit, it returns 1. else, it returns 0.
 char isNumber(char item)
 {
     if(item < 48 || item > 57){
@@ -93,6 +99,9 @@ char isNumber(char item)
 
 /*------------------------------------------------------------------*/
 
+// this function extracting terms to given term array by operating on
+// given polynomial string. it returns 0 if it ends successfully.
+// it can return some error codes too.
 int extractTheTerms(char* polynomial, struct term* terms){
     int cursor = 0;// for browsing in the string
     int termCursor = 0;// we will write into this term
@@ -107,7 +116,7 @@ int extractTheTerms(char* polynomial, struct term* terms){
 
     while(polynomial[cursor]){
         // in this loop, we are browsing on the polynomial string 
-        //and operating for the chars.
+        // and operating for the chars.
         switch(polynomial[cursor]){
             case 'x':
                 xIn = 1;
@@ -220,6 +229,9 @@ int extractTheTerms(char* polynomial, struct term* terms){
 
 /*------------------------------------------------------------------*/
 
+// this function calculates integration for a term array with given
+// parameters. it can calculate numerical integration with 4 methods.
+// it returns result of calculation.
 double calculateIntegration(struct term* terms, int termCount, 
         int start, int end, int intervalCount, char method){
 
