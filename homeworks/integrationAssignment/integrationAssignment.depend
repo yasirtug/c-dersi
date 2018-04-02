@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1522625064 source:/home/yasir/Desktop/integrationAssignment/main.c
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+
