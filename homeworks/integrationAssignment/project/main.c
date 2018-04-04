@@ -22,8 +22,8 @@ double calculateIntegration(struct term*, int, int, int, int, char);
 
 /*------------------------------------------------------------------*/
 
-// this function takes command-line arguments and prints the 
-// numerical integration calculation to the stdio stream.
+// this function takes command-line arguments and prints calculation
+// of numerical integration to the stdio stream.
 int main(int pc, char** parameters)
 {
     char* polynomial = parameters[1];
@@ -31,7 +31,7 @@ int main(int pc, char** parameters)
     int endingPoint = atoi(parameters[3]);
     int intervalCount = atoi(parameters[4]);
     // we are taking third, fourth and fifth parameters, converting
-    // these to integers and assigning to variables.
+    // them to integers and assigning them to variables.
     char method = parameters[5][0];
     // we need the first char of sixth parameter to recognize method
     double integration;
