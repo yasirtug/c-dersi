@@ -17,7 +17,7 @@ struct term
 
 int calculateTermCount(char*);
 char isNumber(char);
-int extractTheTerms(char*, struct term*);
+void extractTheTerms(char*, struct term*);
 double calculateIntegration(struct term*, int, int, int, int, char);
 
 /*------------------------------------------------------------------*/
@@ -39,21 +39,17 @@ int main(int pc, char** parameters)
     struct term terms[termCount];
     // we are calculating term count and creating a termCount sized
     // array. 
-    if(extractTheTerms(polynomial, terms) == -1){
-    // we are extracting terms into 'terms' array and controlling
-    // the return value of function.
-        printf("program terminated due to exception\n");
-        return 0;
-    }
-    /*
+    extractTheTerms(polynomial, terms);
+    /* this code prints extracted terms for debug.
     for(int i = 0; i < termCount; i++){
-        printf("%d. terim:\n", i);
-        printf("katsayi: %d\n", terms[i].coef);
-        printf("us: %d\n", terms[i].exp);
+        printf("%d. term:\n", i);
+        printf("coef: %d\n", terms[i].coef);
+        printf("exp: %d\n", terms[i].exp);
     }
     */
     integration = calculateIntegration(terms, termCount, 
                 startingPoint, endingPoint, intervalCount, method);
+
     printf("%lf\n", integration);
 }
 
@@ -100,12 +96,11 @@ char isNumber(char item)
 /*------------------------------------------------------------------*/
 
 // this function extracting terms to given term array by operating on
-// given polynomial string. it returns 0 if it ends successfully.
-// it can return some error codes too.
-int extractTheTerms(char* polynomial, struct term* terms){
+// given polynomial string. it can stop the process on errors.
+void extractTheTerms(char* polynomial, struct term* terms){
     int cursor = 0;// for browsing in the string
     int termCursor = 0;// we will write into this term
-
+    int sign; // we will write sign as a coefficient into this term.
     char expIn = 0;// if term has an exponential sign
     char xIn = 0;// if term has an x
     char coefIn = 0; // if term has an coefficient
@@ -123,7 +118,12 @@ int extractTheTerms(char* polynomial, struct term* terms){
             break;
 
             case '^':
-                expIn = 1;
+                if(xIn){
+                    expIn = 1;
+                } else{
+                    printf("Polynomial parse error.\n");
+                    exit(0);
+                }             
             break;
 
             case '+':
@@ -133,6 +133,19 @@ int extractTheTerms(char* polynomial, struct term* terms){
             // coefficient and the exponential into the terms
             // array and prepare variables for the next term.
 
+                if((coefIn || expIn || xIn) != 1){
+                // if none of them is equal to 1, then 
+                // probably there is consecutive two signs
+                // and that is not expected.
+                    printf("Polynomial parse error.\n");
+                    exit(0);
+                }
+                sign = 44 - polynomial[cursor];
+                // we are getting the sign as coefficient.
+                // if we are on '-' which is 45 in ascii, then
+                // sign will be -1.
+                // if we are on '+' which is 43 in ascii, then 
+                // sign will be +1
                 if(coefIn == 0){
                     lastCoef = 1;
                 }
@@ -142,6 +155,19 @@ int extractTheTerms(char* polynomial, struct term* terms){
                     lastExp = 1;
                 }
                 // if there is no exponential, then exponential is 1
+
+                if(expIn == 1){
+                // if there is no number after the exp symbol.
+                    if(sign == 1){
+                    // if it is a + symbol
+                        printf("Polynomial parse error.\n");
+                        exit(0);
+                    } else{
+                    // if it is a - symbol
+                        printf("Unvalid polynomial.\n");
+                        exit(0);
+                    }
+                }
 
                 if(xIn == 0){
                     lastExp = 0;
@@ -153,12 +179,8 @@ int extractTheTerms(char* polynomial, struct term* terms){
                 terms[termCursor].exp = lastExp;
                 // we are writing the properties into the term
 
-                lastSign = 44 - polynomial[cursor];
-                // we are getting the sign as coefficient.
-                // if we are on '-' which is 45 in ascii, then
-                // lastSign will be -1.
-                // if we are on '+' which is 43 in ascii, then 
-                // lastSing will be +1
+                lastSign = sign;
+                // we will use that on the next term.
 
                 lastCoef = 0;
                 lastExp = 0;
@@ -175,6 +197,19 @@ int extractTheTerms(char* polynomial, struct term* terms){
                 // string and it is a sign char, we must not 
                 // increase the termCount.
             break;
+            
+            case '.':
+            // it can be float symbol or something else, we want to 
+            // handle it truly.
+                if(expIn == 1){
+                // if it comes after the exp symbol
+                    printf("Unvalid polynomial.\n");
+                    exit(0);
+                } else{
+                    printf("Polynomial parse error.\n");
+                    exit(0);
+                }
+            break;
 
             default:
                 if(isNumber(polynomial[cursor])){
@@ -183,13 +218,15 @@ int extractTheTerms(char* polynomial, struct term* terms){
                     // if we know the term has an exponential,
                     // then we know we are currently at
                     // digits which are after exponential symbol
+                        expIn = 2;
+                    // there is a number after exponential symbol
                         lastExp *= 10;
                         lastExp += polynomial[cursor] - 48;
                     // we get the number from digits one by one
                     } else{
                         coefIn = 1;
-                    // if we are not know if the term has exponential
-                    // or not, then we must looking at the digits of
+                    // if we do not know if the term has exponential
+                    // or not, then we must look at the digits of
                     // the coefficient. then coefIn is true
                         lastCoef *= 10;
                         lastCoef += polynomial[cursor] - 48;
@@ -201,14 +238,28 @@ int extractTheTerms(char* polynomial, struct term* terms){
                     // and returning with -1 error code.
                     printf("Unexpected char: %c\n", 
                                         polynomial[cursor]);
-                    return -1;
+                    exit(0);
                 }
             break;
             }
         cursor++;
     }
-
-
+    // we were doing operations below after every term except 
+    // for the last. these are for the last term because there 
+    // is no sign symbol after this term.
+    if((coefIn || expIn || xIn) != 1){
+        printf("Polynomial parse error.\n");
+        exit(0);
+    }
+    if(expIn == 1){
+        if(sign == 1){
+            printf("Polynomial parse error.\n");
+            exit(0);
+        } else{
+            printf("Unvalid polynomial.\n");
+            exit(0);
+        }
+    }
     if(coefIn == 0){
         lastCoef = 1;
     }
@@ -220,11 +271,6 @@ int extractTheTerms(char* polynomial, struct term* terms){
     }
     terms[termCursor].coef = lastCoef * lastSign;
     terms[termCursor].exp = lastExp;
-    // we were doing these operations after every term except 
-    // for the last. these are for the last term because there 
-    // is no sign after this term.
-    return 0;
-    // zero means function is ended up successfully.
 }
 
 /*------------------------------------------------------------------*/
@@ -344,9 +390,10 @@ double calculateIntegration(struct term* terms, int termCount,
         break;
 
         default:
-        // if the method is none of them, function returns with 
-        // an error code.
-        return -1;
+        // if the method is none of them, function returns an
+        // error code.
+        printf("Method input is unexpected.\n");
+        exit(0);
     }
     return integration;
 }
