@@ -5,7 +5,7 @@
 
 for (  
 
-        int a = 0; a < 5; ++a)
+        int a = "5'xs'()"; a < 5; ++a)
 for (  int b = 0; b < 10; ++b){
     break;
     z++;

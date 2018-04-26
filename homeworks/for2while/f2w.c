@@ -36,7 +36,7 @@ int main(int argc, char** args)
         free(code);
         return 0;
     }
-    printf("input.c file:\n%s\n\n", code);
+    //printf("input.c file:\n%s\n\n", code);
     char* a =(serialize_code(code), serialize_code(code), serialize_code(code), serialize_code(code));
     char* string = serialize_code(code);
     free(code);
@@ -47,6 +47,11 @@ int main(int argc, char** args)
     for(int i = 0; i < expressions.exp_count; ++i){
         printf("%s\n", expressions.exps[i]);
     }
+    for(int i = 0; i < expressions.exp_count; ++i){
+        if(is_for_loop(expressions.exps[i])){
+            extract_loop(expressions.exps[i]);
+        }
+    }
 }
 
 /********************************************************************/
@@ -55,7 +60,7 @@ struct exps extract_expressions(char* D)
 {
     char** exps = (char**)malloc(0);
     int i = -1, exp_start = 0, exp_length = 0, exps_cursor = 0, alloc_size = 0;
-    char counting = 1, scope = 0;
+    char counting = 1, scope = 0, symmetric_scope = 0;
     char* exp;
     while(D[++i]){ 
         if(counting){
@@ -64,6 +69,13 @@ struct exps extract_expressions(char* D)
         else{
             exp[i - exp_start] = D[i];
         }
+        if(D[i] == '\'' || D[i] == '\"'){
+            symmetric_scope = (symmetric_scope + 1) % 2;
+        }
+
+        if(symmetric_scope == 1)
+            continue;
+
         if(D[i] == '{' || D[i] == '('){
             scope++;
         }
@@ -102,16 +114,93 @@ struct exps extract_expressions(char* D)
 struct loop extract_loop(char* exp)
 {
     struct loop l;
-    int i = -1, p_scope = 0;// parantheses scope
-    int length = 0;
-    char scope = 0;
+    char* A,* B,* C,* D;
+    l.A = A;
+    l.B = B;
+    l.C = C;
+    l.D = D;
+
+    int scope = 0;
+    int symmetric_scope = 0;
+    char state_scope = '@';
+    // '@' comes right before 'A' in ASCII
+
+    int length_A = 0, length_B = 0, length_C = 0;
+    int sum_ABC;
+
+    int i = -1;
     while(exp[++i]){
-        if(exp[i] == '('){
-            if(scope == 0){
-                scope = 'A';
+        // A, B, C counting part
+        if(exp[i] == '\"' || exp[i] == '\''){
+            symmetric_scope = (symmetric_scope + 1) % 2;
+        }
+        if(symmetric_scope == 0){
+            if(exp[i] == '('){
+                scope++;
             }
+            if(scope == 1){
+                if(exp[i] == ';' || exp[i] == '(' || exp[i] == ')'){
+                    state_scope++;
+                }
+            }
+            if(exp[i] == ')'){
+                scope--;
+                if(scope == 0)
+                    break;
+            }
+        }
+        
+        if(state_scope == 'A')
+            length_A++;
+        else if(state_scope == 'B')
+            length_B++;
+        else if(state_scope == 'C')
+            length_C++;
+    }
+    // at that point, A, B and C are one more bigger that 
+    // their actual lengths. that is good, because we were
+    // about to allocate memory for them and we will need
+    // one more space for null char which will be at the
+    // end of the each string.
+    A = (char*) malloc(length_A);
+    B = (char*) malloc(length_B);
+    C = (char*) malloc(length_C);
+
+    // A, B, C writing part
+
+    sum_ABC = length_A + length_B + length_C;
+    // this gives actual sum + 3
+    i -= sum_ABC;
+    // and now this exp[i] points to paranthesis after 'for'
+    for(int k = 0; k < length_A; ++k){
+        i++;
+        A[k] = exp[i];
+    }
+    for(int k = 0; k < length_B; ++k){
+        i++;
+        B[k] = exp[i];
+    }
+    for(int k = 0; k < length_C; ++k){
+        i++;
+        C[k] = exp[i];
+    }
+    A[length_A - 1] = '\0';
+    B[length_B - 1] = '\0';
+    C[length_C - 1] = '\0';
+    printf("\nA: %s\nB: %s\nC: %s\n\n", A, B, C);
+
+    scope = 0;
+    symmetric_scope = 0;
+    while(exp[++i]){
+        if(exp[i] == '{')
+            scope++;
+        if(exp[i] == '\'' || exp[i] == '\"')
+            symmetric_scope = (symmetric_scope + 1) % 2;
+        if(exp[i] == ';' || exp[i] == '}'){
 
         }
+        if(exp[i] == '}')
+            scope--;
     }
     return l;
 }
@@ -176,3 +265,95 @@ char is_for_loop(char* exp)
     }
     return 0;
 }
+
+
+
+
+/*
+struct loop extract_loop(char* exp)
+{
+    struct loop l;
+
+    int scope = 0;
+    char* A,* B,* C,* D;
+    char* current;
+    char state = '0';
+    int state_length = 0;
+    char reading = 0;
+    char counting = 1;
+    int cursor;
+    int i = -1;
+    while(exp[++i]){
+        if(state == 'D'){
+            break;
+        }
+        if(exp[i] == '('){
+            scope++;
+        }
+        else if(exp[i] == ')'){
+            scope--;
+        }
+        if(reading){
+            if(exp[i] == ';' || (scope == 1 && exp[i] == ')')){
+                reading = 0;
+                counting = 1;
+                current[i - cursor] = '\0';
+                state++;
+                state_length = 0;
+                continue;
+            }
+            if(state == 'A'){
+                A[i - cursor] = exp[i];
+                current = A;
+                continue;
+            }
+            if(state == 'B'){
+                B[i - cursor] = exp[i];
+                current = B;
+                continue;
+            }
+            if(state == 'C'){
+                C[i - cursor] = exp[i];
+                current = C;
+                continue;
+            }
+        }
+        if(counting){
+            if(exp[i] == '('){
+                if(state == '0'){
+                    state = 'A';
+                    continue;
+                }
+            }
+            if(exp[i] == ';' || (scope == 1 && exp[i] == ')')){
+                reading = 1;
+                counting = 0;
+                i -= state_length + 1;
+                cursor = i + 1;
+                switch(state){
+                    case 'A':
+                        A = (char*) malloc(state_length + 1);
+                        break;
+                    case 'B':
+                        B = (char*) malloc(state_length + 1);
+                        break;
+                    case 'C':
+                        C = (char*) malloc(state_length + 1);
+                        break;
+                }
+                continue;
+            }
+            if(state >= 'A' && state <= 'C'){
+                state_length++;
+                continue;
+            }
+        }
+    }
+    printf("A:%s\n",A);
+    printf("B:%s\n",B);
+    printf("C:%s\n",C);
+    printf("Scope:%d\n",scope);
+    
+    return l;
+}
+*/
