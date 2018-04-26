@@ -1,17 +1,8 @@
 
 
-    int z = 7;int
-    a = 5;
+    int a = 7;int
+    z = 5;
 
+main(){eheuehe;}
 for (  
-
-        int a = "5'xs'()"; a < 5; ++a)
-for (  int b = 0; b < 10; ++b){
-    break;
-    z++;
-}
-z = 7;
-        
-    a = 5;
-
-    return 0;
+        int a = 0; a < 5; ++a){for(int i = 1; i < 7; ++i){x = 7;}int xd = 7;}
