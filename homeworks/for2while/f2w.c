@@ -4,14 +4,6 @@
 
 #define STRING_BUFFER_SIZE 100000
 #define MAX_EXPRESSION_COUNT 40
-#define LOOP_EXPRESSION_SIZE 40
-
-struct loop{
-    char* A;
-    char* B;
-    char* C;
-    char* D;
-};
 
 struct exps{
     int exp_count;
@@ -19,12 +11,13 @@ struct exps{
 };
 
 struct exps extract_expressions(char*);
-struct loop extract_loop(char*);
+char** extract_loop(char*);
 char* file2string(char*);
 FILE* lines2file(char**);
 char* serialize_code(char*);
 char is_for_loop(char*);
 void operate(char*, char**);
+char* write(char*, char*);
 
 /********************************************************************/
 
@@ -61,37 +54,20 @@ void operate(char* a, char** area){
     int exp_count = expressions.exp_count;
     char** exps = expressions.exps;
 
-    struct loop temp_loop;
+    char** loop;
     for(int i = 0; i < exp_count; ++i){
         if(is_for_loop(exps[i])){
-            temp_loop = extract_loop(exps[i]);
-            area[line] = (char*) malloc(1000);
-            sprintf(area[line++], "%s%s;", tabs, temp_loop.A);
-            area[line] = (char*) malloc(1000);
-            sprintf(area[line++], "%swhile(%s){", tabs, temp_loop.B);
-            tab_count++;
-            for(int tab = 0; tab < tab_count; ++tab){
-                sprintf(tabs + tab * 4, "    ");
-            }
-            if(tab_count == 0){
-                tabs[0] = '\0';
-            }
-            operate(temp_loop.D, area);
-            area[line] = (char*) malloc(1000);
-            sprintf(area[line++], "%s%s;", tabs, temp_loop.C);
-            area[line] = (char*) malloc(3);
-            tab_count--;
-            for(int tab = 0; tab < tab_count; ++tab){
-                sprintf(tabs + tab * 4, "    ");
-            }
-            if(tab_count == 0){
-                tabs[0] = '\0';
-            }
-            sprintf(area[line++], "%s}", tabs);
+            loop = extract_loop(exps[i]);
+            
+            area[line++] = loop[0];
+            area[line++] = loop[1];
+            area[line++] = loop[2];
+            area[line++] = loop[3];
+            area[line++] = loop[4];
+            area[line++] = loop[5];
         }
         else{
-            area[line] = (char*) malloc(1000);
-            sprintf(area[line++], "%s%s", tabs, exps[i]);
+            area[line++] = exps[i];
         }
     }
 }
@@ -152,9 +128,9 @@ struct exps extract_expressions(char* D)
 
 /********************************************************************/
 
-struct loop extract_loop(char* exp)
+char** extract_loop(char* exp)
 {
-    struct loop l;
+    char** loop = (char**) malloc(6 * sizeof(char*));
     char* A,* B,* C,* D;
 
     int scope = 0;
@@ -247,12 +223,47 @@ struct loop extract_loop(char* exp)
     C[length_C - 1] = '\0';
     D[length_D - 1] = '\0';
 
-    l.A = A;
-    l.B = B;
-    l.C = C;
-    l.D = D;
+    char* temp_line;
+    char* cursor;
+
+    temp_line = (char*) malloc(length_A + 1);
+    cursor = write(temp_line, A);
+    write(cursor, ";");
+    free(A);
+    loop[0] = temp_line;
+    
+    temp_line = (char*) malloc(length_B + 7);
+    cursor = write(temp_line, "while(");
+    cursor = write(cursor, B);
+    write(cursor, ")");
+    free(B);
+    loop[1] = temp_line;
+
+    temp_line = (char*) malloc(2);
+    write(temp_line, "{");
+    loop[2] = temp_line;
+
+    loop[3] = D;
+
+    temp_line = (char*) malloc(length_C + 1);
+    cursor = write(temp_line, C);
+    write(cursor, ";");
+    loop[4] = temp_line;
+
+    temp_line = (char*) malloc(2);
+    write(temp_line, "}");
+    loop[5] = temp_line;
     //printf("\nA: %s\nB: %s\nC: %s\nD: %s\n", l.A, l.B, l.C, l.D);
-    return l;
+    return loop;
+}
+
+char* write(char* string, char* source){
+    int i = 0;
+    do{
+        string[i] = source[i];        
+    } while(source[i++]);
+
+    return string + i - 1;
 }
 
 /********************************************************************/
