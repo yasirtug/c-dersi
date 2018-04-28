@@ -1,8 +1,20 @@
 
 
-    int a = 7;int
-    z = 5;
+int toplam = 0;
+for(int a 
+=
+ 0; a < 10; a++)
+for(int b = 
+0; b < 10;b++)
+for(int c = 0; c < 10; c++)
+{ int a = 2;
+if(5<6)
+{int g;}         int x = 0;}
 
-main(){eheuehe;}
-for (  
-        int a = 0; a < 5; ++a){for(int i = 1; i < 7; ++i){x = 7;}int xd = 7;}
+if(a){
+    for(;;){
+        return 0;
+    }
+}
+printf("%d",toplam);
+

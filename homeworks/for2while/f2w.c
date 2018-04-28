@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define STRING_BUFFER_SIZE 100000
 #define MAX_EXPRESSION_COUNT 40
+#define MAX_TAB_COUNT 10
 
 struct exps{
     int exp_count;
@@ -13,14 +13,16 @@ struct exps{
 struct exps extract_expressions(char*);
 char** extract_loop(char*);
 char* file2string(char*);
-FILE* lines2file(char**);
+FILE* lines2file(char**, char*, int*);
 char* serialize_code(char*);
 char is_for_loop(char*);
-void operate(char*, char**);
+int operate(char*, char**, int, int*, int);
 char* write(char*, char*);
 
 /********************************************************************/
-
+// this function takes a command line argument as a file location
+// and reads it. after serializing it's data, it converts 'for' loops
+// to 'while' loops and writes it to an output file.
 int main(int argc, char** args)
 {
     if(args[1] == NULL){
@@ -33,24 +35,23 @@ int main(int argc, char** args)
         return 0;
     }
     //printf("input.c file:%s\n\n", code);
-    char* a =(serialize_code(code), serialize_code(code), serialize_code(code), serialize_code(code));
     char* string = serialize_code(code);
     free(code);
     printf("serialized code: \n%s\n", string);
 
-    char** area = (char**) calloc(MAX_EXPRESSION_COUNT, sizeof(char*));
-    operate(string, area);
+    char** lines = (char**) calloc(MAX_EXPRESSION_COUNT, sizeof(char*));
+    int* tabs = (int*) calloc(MAX_EXPRESSION_COUNT, sizeof(int));
 
-    lines2file(area);
+    operate(string, lines, 0, tabs, 0);
+
+    lines2file(lines, "output.c", tabs);
 }
 
 /********************************************************************/
-
-int line = 0;
-int tab_count = 0;
-char* tabs = (char*) malloc(50);
-void operate(char* a, char** area){
-    struct exps expressions = extract_expressions(a);
+// this function recursively extracts expressions and saves lines.
+int operate(char* string, char** lines, int line_cursor, int* tabs, int tab_count)
+{
+    struct exps expressions = extract_expressions(string);
     int exp_count = expressions.exp_count;
     char** exps = expressions.exps;
 
@@ -59,21 +60,37 @@ void operate(char* a, char** area){
         if(is_for_loop(exps[i])){
             loop = extract_loop(exps[i]);
             
-            area[line++] = loop[0];
-            area[line++] = loop[1];
-            area[line++] = loop[2];
-            area[line++] = loop[3];
-            area[line++] = loop[4];
-            area[line++] = loop[5];
+            tabs[line_cursor] = tab_count;
+            lines[line_cursor++] = loop[0];
+            
+            tabs[line_cursor] = tab_count;
+            lines[line_cursor++] = loop[1];
+
+            tabs[line_cursor] = tab_count;            
+            lines[line_cursor++] = loop[2];
+
+            tab_count++;
+            line_cursor = operate(loop[3], lines, line_cursor, tabs, tab_count);
+            
+            
+            tabs[line_cursor] = tab_count; 
+            lines[line_cursor++] = loop[4];
+            tab_count--;
+
+            tabs[line_cursor] = tab_count;
+            lines[line_cursor++] = loop[5];
         }
         else{
-            area[line++] = exps[i];
+            tabs[line_cursor] = tab_count;            
+            lines[line_cursor++] = exps[i];
         }
     }
+    return line_cursor;
 }
 
 /********************************************************************/
-
+// this function extracts expressions of a serialized code and 
+// returns a struct which contains expressions and expression count.
 struct exps extract_expressions(char* D)
 {
     char** exps = (char**)malloc(0);
@@ -102,7 +119,7 @@ struct exps extract_expressions(char* D)
                 if(D[i] == '}' || D[i] == ';'){
                     if(counting){
                         counting = 0;
-                        exp = (char*)malloc(exp_length + 1);
+                        exp = (char*) malloc(exp_length + 1);
                         i -= exp_length;
                     }
                     else{
@@ -127,7 +144,7 @@ struct exps extract_expressions(char* D)
 }
 
 /********************************************************************/
-
+// this function extracts loop into lines and returns them.
 char** extract_loop(char* exp)
 {
     char** loop = (char**) malloc(6 * sizeof(char*));
@@ -257,6 +274,9 @@ char** extract_loop(char* exp)
     return loop;
 }
 
+/********************************************************************/
+// this function copies chars from a char array into another char 
+// array one by one and returns last copied address of the string.
 char* write(char* string, char* source){
     int i = 0;
     do{
@@ -267,7 +287,8 @@ char* write(char* string, char* source){
 }
 
 /********************************************************************/
-
+// this function extracts file content into a char array and 
+// returns it.
 char* file2string(char* location)
 {
     FILE* file = fopen(location,"r");
@@ -284,24 +305,34 @@ char* file2string(char* location)
         }
         i++;
     }
+    fclose(file);
     return string;
 }
 
 /********************************************************************/
-
-FILE* lines2file(char** lines)
+// this function write lines into a file.
+FILE* lines2file(char** lines, char* file_name, int* tabs)
 {
-    FILE* file = fopen("output.c", "w+");
-
+    FILE* file = fopen(file_name, "w+");
     int i = -1;
+
+    char* tab = (char*) malloc(MAX_TAB_COUNT * sizeof(char) + 1);
+    char* temp_tab = tab;
     while(lines[++i]){
-        fprintf(file, "%s\n", lines[i]);
-        printf("%s\n", lines[i]);
+        tab = temp_tab;
+        tab[0] = '\0';
+        for(int k = 0; k < tabs[i]; ++k){
+            tab = write(tab, "    ");
+        }
+        fprintf(file, "%s%s\n", temp_tab, lines[i]);
+        printf("%s%s\n", temp_tab, lines[i]);
     }
     fclose(file);
 }
 
 /********************************************************************/
+// this function serializes code. it converts all '\n's to spaces and
+// deletes all unnecessary spaces.
 char* serialize_code(char* code)
 {
     char* string = (char*) calloc(STRING_BUFFER_SIZE, 1);
@@ -330,7 +361,9 @@ char* serialize_code(char* code)
 }
 
 /********************************************************************/
-
+// this function checks if an expression is a for loop or not.
+// if an expression starts with "for(" or "for (", it returns
+// 1. else, it returns 0.
 char is_for_loop(char* exp)
 {
     if(exp[0] == 'f' && exp[1] == 'o' && exp[2] == 'r' && 

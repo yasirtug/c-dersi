@@ -1,9 +1,21 @@
-int a = 7;
-int z = 5;
-main(){eheuehe;}
+int toplam = 0;
 int a = 0;
-while(a < 5)
+while(a < 10)
 {
-for(int i = 1;i < 7;++i){x = 7;}int xd = 7;}
-++a;
+    int b = 0;
+    while(b < 10)
+    {
+        int c = 0;
+        while(c < 10)
+        {
+            int a = 2;
+            if(5<6){int g;}
+            int x = 0;
+            c++;
+        }
+        b++;
+    }
+    a++;
 }
+if(a){for(;;){return 0;}}
+printf("%d",toplam);
