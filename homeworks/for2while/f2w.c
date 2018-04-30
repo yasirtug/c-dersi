@@ -65,20 +65,22 @@ int operate(char* string, char** lines, int line_cursor, int* tabs, int tab_coun
             
             tabs[line_cursor] = tab_count;
             lines[line_cursor++] = loop[1];
-
-            tabs[line_cursor] = tab_count;            
-            lines[line_cursor++] = loop[2];
-
             tab_count++;
-            line_cursor = operate(loop[3], lines, line_cursor, tabs, tab_count);
-            
-            
-            tabs[line_cursor] = tab_count; 
-            lines[line_cursor++] = loop[4];
+            if(loop[2][0]){
+                line_cursor = operate(loop[2], lines, line_cursor, tabs, tab_count);                
+            }
+            else{
+                i++;
+                line_cursor = operate(exps[i] + 1, lines, line_cursor, tabs, tab_count);
+            }
             tab_count--;
-
             tabs[line_cursor] = tab_count;
-            lines[line_cursor++] = loop[5];
+            lines[line_cursor++] = loop[3];
+        }
+        else if(exps[i][0] == '{'){
+            tab_count++;
+            line_cursor = operate(exps[i] + 1, lines, line_cursor, tabs, tab_count);
+            tab_count--;
         }
         else{
             tabs[line_cursor] = tab_count;            
@@ -93,51 +95,48 @@ int operate(char* string, char** lines, int line_cursor, int* tabs, int tab_coun
 // returns a struct which contains expressions and expression count.
 struct exps extract_expressions(char* D)
 {
-    char** exps = (char**)malloc(0);
-    int i = -1, exp_start = 0, exp_length = 0, exps_cursor = 0, alloc_size = 0;
-    char counting = 1, scope = 0, symmetric_scope = 0;
-    char* exp;
-    while(D[++i]){ 
-        if(counting){
-            exp_length++;
+    char** exps = (char**)malloc(MAX_EXPRESSION_COUNT * sizeof(char*));
+    int i = -1, exp_start = 0, exps_cursor = 0, l = 1, k = 0;
+    char scope = 0, symmetric_scope = 0;
+    char* exp = malloc(0);
+    while(D[++i]){
+        if(realloc(exp, ++l) == NULL){
+                printf("Realloc fail.\n");
+                exit(0);
         }
-        else{
-            exp[i - exp_start] = D[i];
-        }
+        exp[i - exp_start] = D[i];
+
         if(D[i] == '\'' || D[i] == '\"'){
             symmetric_scope = (symmetric_scope + 1) % 2;
         }
-        
         if(symmetric_scope == 0){
-            if(D[i] == '{' || D[i] == '('){
-                scope++;
-            }
             if(D[i] == '}' || D[i] == ')'){
                 scope--;
             }
             if(scope == 0){
+                if(D[i] == '{'){
+                    exp[i - exp_start] = '\0';
+                    exps[exps_cursor++] = exp;
+                    exp = (char*) malloc(1);
+                    exp[0] = '{';
+                    l = 1;
+                    exp_start = i;        
+                }
                 if(D[i] == '}' || D[i] == ';'){
-                    if(counting){
-                        counting = 0;
-                        exp = (char*) malloc(exp_length + 1);
-                        i -= exp_length;
-                    }
-                    else{
-                        counting = 1;
-                        exp[i - exp_start + 1] = 0;
-                        exp_start = i + 1;
-                        exps = (char**)realloc(exps, alloc_size + 8);
-                        if(exps == NULL){
-                            printf("Reallocate failed.");
-                            exit(0);// probably leak happened
-                        }
-                        alloc_size += 8;
-                        exps[exps_cursor++] = exp;
-                        exp_length = 0;
-                    }
+                    exp[i - exp_start + 1] = '\0';
+                    exps[exps_cursor++] = exp;
+                    exp = (char*) malloc(0);
+                    l = 1;
+                    exp_start = i + 1;
                 }
             }
+            if(D[i] == '{' || D[i] == '('){
+                scope++;
+            }
         }
+    }
+    for(int i = 0; i < exps_cursor; ++i){
+        printf("exp %d: %s\n", i, exps[i]);
     }
     struct exps expressions = {exps_cursor, exps};
     return expressions;
@@ -145,6 +144,12 @@ struct exps extract_expressions(char* D)
 
 /********************************************************************/
 // this function extracts loop into lines and returns them.
+// here is contract of it's return type:
+// return[0] -> "A;"
+// return[1] -> "while(B)"
+// return[2] -> "D" // as a block code {} or as just one line.
+// return[3] -> "C;"
+
 char** extract_loop(char* exp)
 {
     char** loop = (char**) malloc(6 * sizeof(char*));
@@ -220,21 +225,16 @@ char** extract_loop(char* exp)
     // below is D counting and writing part
     scope = 0;
     symmetric_scope = 0;
-    if(exp[i + 1] == '{'){
-        i++;
-    }
     while(exp[++i]){
         length_D++;
     }
     D = (char*) malloc(length_D);
     i -= length_D;
 
-    printf("d: %s, length: %d\n",exp + i ,length_D);
     for(int k = 0; k < length_D; ++k){
         i++;
         D[k] = exp[i];
     }
-    printf("d: %s\n",D);
     A[length_A - 1] = '\0';
     B[length_B - 1] = '\0';
     C[length_C - 1] = '\0';
@@ -256,20 +256,13 @@ char** extract_loop(char* exp)
     free(B);
     loop[1] = temp_line;
 
-    temp_line = (char*) malloc(2);
-    write(temp_line, "{");
-    loop[2] = temp_line;
-
-    loop[3] = D;
+    loop[2] = D;
 
     temp_line = (char*) malloc(length_C + 1);
     cursor = write(temp_line, C);
     write(cursor, ";");
-    loop[4] = temp_line;
+    loop[3] = temp_line;
 
-    temp_line = (char*) malloc(2);
-    write(temp_line, "}");
-    loop[5] = temp_line;
     //printf("\nA: %s\nB: %s\nC: %s\nD: %s\n", l.A, l.B, l.C, l.D);
     return loop;
 }
@@ -277,7 +270,8 @@ char** extract_loop(char* exp)
 /********************************************************************/
 // this function copies chars from a char array into another char 
 // array one by one and returns last copied address of the string.
-char* write(char* string, char* source){
+char* write(char* string, char* source)
+{
     int i = 0;
     do{
         string[i] = source[i];        

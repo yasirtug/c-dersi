@@ -1,21 +1,18 @@
-int toplam = 0;
-int a = 0;
-while(a < 10)
-{
-    int b = 0;
-    while(b < 10)
-    {
-        int c = 0;
-        while(c < 10)
-        {
-            int a = 2;
-            if(5<6){int g;}
-            int x = 0;
-            c++;
-        }
-        b++;
-    }
-    a++;
-}
-if(a){for(;;){return 0;}}
-printf("%d",toplam);
+if(a == 6)
+    test;
+    a = 7;
+    int a = 3 ;
+    while(a < 3)
+        printf("%d".a);
+    ++a;
+else
+    a = 7;
+int a = 
+;
+a = (int)7;
+switch(a)
+int i = 0;
+while(i < 9)
+    int a = 0;
+i++;
+int b = 7;

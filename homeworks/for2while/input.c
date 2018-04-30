@@ -1,20 +1,22 @@
-
-
-int toplam = 0;
-for(int a 
-=
- 0; a < 10; a++)
-for(int b = 
-0; b < 10;b++)
-for(int c = 0; c < 10; c++)
-{ int a = 2;
-if(5<6)
-{int g;}         int x = 0;}
-
-if(a){
-    for(;;){
-        return 0;
+if(a = 6){
+    break;
+    trol;
+    a = 7;
+    for(int a = 3 ;;){
+        xd;
     }
 }
-printf("%d",toplam);
+else{
+continue;
+}
+int a = {2};
 
+switch(a){
+    case '1':
+    case '2':
+    break;
+}
+
+for(int i = 0; i < 9; i++)
+    break;
+    bontinue;
